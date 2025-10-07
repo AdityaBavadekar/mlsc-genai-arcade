@@ -242,7 +242,7 @@ function HeroCountdown() {
       </p>
 
       {/* Countdown */}
-      <div className="flex flex-wrap gap-4 sm:gap-8 justify-center items-center font-mono text-[1vw] md:text-[3vw] tracking-widest uppercase text-[#00FFF7] mb-8">
+      <div className="grid md:grid-cols-4 grid-cols-3 gap-4 sm:gap-8 w-full max-w-3xl font-mono text-[3vw] md:text-[1.5vw] tracking-widest uppercase text-[#00FFF7] mb-8 justify-items-center">
         <div className="flex flex-col items-center">
           <span>{timeLeft.days}</span>
           <span className="text-xs sm:text-sm mt-1">Days</span>
@@ -255,7 +255,7 @@ function HeroCountdown() {
           <span>{timeLeft.minutes}</span>
           <span className="text-xs sm:text-sm mt-1">Minutes</span>
         </div>
-        <div className="flex flex-col items-center animate-pulse">
+        <div className="flex flex-col items-center animate-pulse hidden md:flex">
           <span>{timeLeft.seconds}</span>
           <span className="text-xs sm:text-sm mt-1">Seconds</span>
         </div>
