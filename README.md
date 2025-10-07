@@ -36,10 +36,10 @@ pnpm install
 
 ```
 # For macOS/Linux
-cp .env.example .env
+cp env.sample .env
 
 # For Windows
-copy .env.example .env
+copy env.sample .env
 ```
 
 4. Setup Prisma and migrations:
