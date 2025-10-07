@@ -150,6 +150,7 @@ const SpaceshipGame = ({ onGameComplete }: { onGameComplete: (score: number, won
   const [won, setWon] = useState(false);
   const GAME_DURATION = 60; // seconds
   const [remainingTime, setRemainingTime] = useState(GAME_DURATION);
+  const [isMobile, setIsMobile] = useState(false);
   const gameStateRef = useRef<GameState>({
     player: { x: 400, y: 500, width: 40, height: 40, speed: 2.5 },
     bullets: [],
@@ -161,6 +162,11 @@ const SpaceshipGame = ({ onGameComplete }: { onGameComplete: (score: number, won
     startTime: -1,
     gameOverReason: -1
   });
+
+  useEffect(() => {
+    // Detect mobile device
+    setIsMobile(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -192,6 +198,41 @@ const SpaceshipGame = ({ onGameComplete }: { onGameComplete: (score: number, won
 
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
+
+    // Mobile touch controls
+    const handleTouchStart = (e: TouchEvent) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      const rect = canvas.getBoundingClientRect();
+      const touchX = touch.clientX - rect.left;
+      const touchY = touch.clientY - rect.top;
+      
+      // Fire bullets on tap
+      state.bullets.push({
+        x: state.player.x + state.player.width / 2 - 2,
+        y: state.player.y,
+        width: 4,
+        height: 15,
+        speed: 7,
+      });
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      const rect = canvas.getBoundingClientRect();
+      const touchX = touch.clientX - rect.left;
+      
+      // Move player to touch X position
+      const canvasScale = canvas.width / rect.width;
+      const gameX = touchX * canvasScale;
+      state.player.x = Math.max(0, Math.min(canvas.width - state.player.width, gameX - state.player.width / 2));
+    };
+
+    if (isMobile) {
+      canvas.addEventListener("touchstart", handleTouchStart, { passive: false });
+      canvas.addEventListener("touchmove", handleTouchMove, { passive: false });
+    }
 
     const gameLoop = (time: number) => {
       const delta = (time - lastTime) / 1000; // seconds
@@ -327,8 +368,12 @@ const SpaceshipGame = ({ onGameComplete }: { onGameComplete: (score: number, won
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
+      if (isMobile) {
+        canvas.removeEventListener("touchstart", handleTouchStart);
+        canvas.removeEventListener("touchmove", handleTouchMove);
+      }
     };
-  }, []);
+  }, [isMobile]);
 
   useEffect(() => {
     const state = gameStateRef.current;
@@ -352,10 +397,10 @@ const SpaceshipGame = ({ onGameComplete }: { onGameComplete: (score: number, won
     }, 100);
 
     return () => clearInterval(timer);
-  }, []);
+  }, [remainingTime]);
 
   return (
-    <div className="min-h-screen bg-[#0B0C10] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[#0B0C10] flex items-center justify-center p-2 sm:p-4">
       <div className="text-center max-w-4xl w-full">
         {/* Header */}
         <div className="mb-6 animate-[fadeIn_0.5s_ease-in]">
@@ -376,26 +421,29 @@ const SpaceshipGame = ({ onGameComplete }: { onGameComplete: (score: number, won
         </div>
 
         {/* Stats Display */}
-        <div className="flex justify-center gap-8 mb-4">
-          <div className="flex items-center gap-3 text-2xl font-mono px-6 py-3 rounded-lg border-2 border-[#00FFF7] bg-[#0B0C10] transition-all hover:scale-105">
-            <Clock className="w-6 h-6 text-[#00FFF7]" />
+        <div className="flex justify-center gap-4 sm:gap-8 mb-4 flex-wrap">
+          <div className="flex items-center gap-2 sm:gap-3 text-lg sm:text-2xl font-mono px-3 sm:px-6 py-2 sm:py-3 rounded-lg border-2 border-[#00FFF7] bg-[#0B0C10] transition-all hover:scale-105">
+            <Clock className="w-4 h-4 sm:w-6 sm:h-6 text-[#00FFF7]" />
             <span className="text-[#00FFF7]">
               TIME: {remainingTime?.toFixed(1)}s
             </span>
           </div>
-          <div className="flex items-center gap-3 text-2xl font-mono px-6 py-3 rounded-lg border-2 border-[#39FF14] bg-[#0B0C10] transition-all hover:scale-105">
-            <Target className="w-6 h-6 text-[#39FF14]" />
+          <div className="flex items-center gap-2 sm:gap-3 text-lg sm:text-2xl font-mono px-3 sm:px-6 py-2 sm:py-3 rounded-lg border-2 border-[#39FF14] bg-[#0B0C10] transition-all hover:scale-105">
+            <Target className="w-4 h-4 sm:w-6 sm:h-6 text-[#39FF14]" />
             <span className="text-[#39FF14]">POINTS: {score}</span>
           </div>
         </div>
 
         {/* Game Canvas */}
-        <canvas
-          ref={canvasRef}
-          width={800}
-          height={600}
-          className="border-4 rounded-lg mx-auto border-[#00FFF7] bg-black animate-[fadeIn_1s_ease-in]"
-        />
+        <div className="flex justify-center">
+          <canvas
+            ref={canvasRef}
+            width={800}
+            height={600}
+            className="border-4 rounded-lg border-[#00FFF7] bg-black animate-[fadeIn_1s_ease-in] max-w-full h-auto"
+            style={{ touchAction: 'none', maxWidth: isMobile ? '100vw' : '800px', height: 'auto' }}
+          />
+        </div>
 
         {/* Controls */}
         <div className="mt-6 space-y-3 animate-[slideUp_0.8s_ease-out]">
@@ -406,13 +454,26 @@ const SpaceshipGame = ({ onGameComplete }: { onGameComplete: (score: number, won
             </div>
             <Crosshair className="w-5 h-5 text-[#39FF14]" />
           </div>
-          <div className="flex justify-center gap-6 text-sm font-mono text-[#E2E8F0]">
-            <span className="px-4 py-2 rounded bg-[#1A1B26] border border-[#00FFF7] transition-all hover:border-[#00FFF7] hover:bg-[#00FFF710]">
-              ← → ↑ ↓ MOVE
-            </span>
-            <span className="px-4 py-2 rounded bg-[#1A1B26] border border-[#39FF14] transition-all hover:border-[#39FF14] hover:bg-[#39FF1410]">
-              SPACE FIRE
-            </span>
+          <div className="flex justify-center gap-3 sm:gap-6 text-xs sm:text-sm font-mono text-[#E2E8F0] flex-wrap">
+            {!isMobile ? (
+              <>
+                <span className="px-3 sm:px-4 py-2 rounded bg-[#1A1B26] border border-[#00FFF7] transition-all hover:border-[#00FFF7] hover:bg-[#00FFF710]">
+                  ← → MOVE
+                </span>
+                <span className="px-3 sm:px-4 py-2 rounded bg-[#1A1B26] border border-[#39FF14] transition-all hover:border-[#39FF14] hover:bg-[#39FF1410]">
+                  SPACE FIRE
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="px-3 sm:px-4 py-2 rounded bg-[#1A1B26] border border-[#00FFF7] transition-all">
+                  DRAG TO MOVE
+                </span>
+                <span className="px-3 sm:px-4 py-2 rounded bg-[#1A1B26] border border-[#39FF14] transition-all">
+                  TAP TO FIRE
+                </span>
+              </>
+            )}
           </div>
           <p className="text-xs text-[#888] mt-2 font-mono">
             » Eliminate 100 hostile AI units to stabilize the neural core «
@@ -580,6 +641,12 @@ export default function GenAIArcade() {
     <>
 
       <style jsx global>{`
+  /* Prevent zoom on mobile */
+  @media (max-width: 768px) {
+    html {
+      touch-action: manipulation;
+    }
+  }
   @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
@@ -604,6 +671,14 @@ export default function GenAIArcade() {
     to { 
       opacity: 1;
       transform: scale(1);
+    }
+  }
+  
+  /* Mobile optimizations */
+  @media (max-width: 768px) {
+    canvas {
+      max-width: 95vw !important;
+      height: auto !important;
     }
   }
 `}</style>
