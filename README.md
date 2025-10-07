@@ -46,7 +46,7 @@ copy env.sample .env
 
 - Start PostgreSQL using Docker Compose:
 ```bash
-docker-compose up -f docker-compose.yml -d
+docker-compose -f docker-compose.yml up -d 
 ```
 
 - Run migrations:
